@@ -1,0 +1,35 @@
+version: '3'
+networks:
+  traefik-public:
+    external: true
+
+services:
+   wordpress:
+     image: wordpress:latest
+     restart: always
+     volumes:
+       - wordpress_data:/var/www/html
+     environment:
+       WORDPRESS_DB_HOST: ${DATABASE_HOST}:3306
+       WORDPRESS_DB_NAME: ${DATABASE_NAME}
+       WORDPRESS_DB_USER: ${DATABASE_USER}
+       WORDPRESS_DB_PASSWORD: ${DATABASE_PASSWORD}
+       WORDPRESS_TABLE_PREFIX: ${DATABASE_PREFIX}
+     networks:
+        - traefik-public
+     deploy:
+       labels:
+         - traefik.enable=true
+         - traefik.docker.network=traefik-public
+         - traefik.constraint-label=traefik-public
+         - traefik.http.routers.${TRAEFIK_ROUTER}-http.rule=Host(`${DOMAIN}`)
+         - traefik.http.routers.${TRAEFIK_ROUTER}-http.entrypoints=http
+         - traefik.http.routers.${TRAEFIK_ROUTER}-http.middlewares=https-redirect
+         - traefik.http.routers.${TRAEFIK_ROUTER}-https.rule=Host(`${DOMAIN}`)
+         - traefik.http.routers.${TRAEFIK_ROUTER}-https.entrypoints=https
+         - traefik.http.routers.${TRAEFIK_ROUTER}-https.tls=true
+         - traefik.http.routers.${TRAEFIK_ROUTER}-https.tls.certresolver=le
+         - traefik.http.services.${TRAEFIK_ROUTER}.loadbalancer.server.port=80
+
+volumes:
+    wordpress_data:
